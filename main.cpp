@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <string>
 
 struct Player
 {
@@ -13,8 +14,8 @@ struct Player
 
     void move(int newCell)
     {
-        cell = newCell;
-        if(cell > 99)
+        cell += newCell;
+        if (cell > 99)
         {
             cell = 99;
         }
@@ -30,29 +31,49 @@ struct Player
         diceRoll = 1 + (((N + 1) / 2 * 10 + 41) % 6);
         std::cout << "Dice roll: " << diceRoll << "\n";
 
-        move(cell + diceRoll);
+        move(diceRoll);
     }
 
-    int startTurn()
+    void startTurn()
     {
         std::cout << "\n----------\n";
         std::cout << "Player " << playerNum << "'s turn:\n";
         std::cout << "Current cell position: " << cell << "\n";
         
         rollDice();
-        
-        std::cout << "Landed on cell " << cell;
-        return cell;
     }
 };
 
 struct Board
 {
     int cells[100] = {};
+    bool completed = false;
 
-    void playerMove(Player *player)
+    void checkPlayerCell(Player *player)
     {
-        
+        if (player->cell == 99)
+        {
+            std::cout << "Player " << player->playerNum << " passed the finished the line. They win!";
+            completed = true;
+            return;
+        }
+
+        std::cout << "Landed on cell " << player->cell << ". ";
+        if( cells[player->cell - 1] > 0 ) // positive
+        {
+            player->move(cells[player->cell - 1]);
+            std::cout << "However, it was a ladder! Forward to cell " << player->cell << ".";
+        }
+        else if( cells[player->cell - 1] < 0 ) // negative
+        {
+            player->move(cells[player->cell - 1]);
+            std::cout << "However, it was a snake! Moving back to cell " << player->cell << ".";
+        }
+        else
+        {
+            std::cout << "Which is a normal cell.";
+        }
+
     }
 };
 
@@ -60,11 +81,29 @@ struct Board
 int main()
 {
 
-    Player player1 = Player(1);
+    struct Player players[2] = {
+        Player(1),
+        Player(2)
+    };
 
-    while(player1.cell < 99)
+    std::ifstream file("board.txt");
+    Board board = Board();
+    for(int i = 1; i < 98; i++)
     {
-        player1.startTurn();
+        file >> board.cells[i];
+    }
+
+
+    while(!board.completed)
+    {
+        for(int i = 0; i < 2; i++)
+        {
+            if(!board.completed)
+            {
+                players[i].startTurn();
+                board.checkPlayerCell(&players[i]);
+            }
+        }
     }
 
 
